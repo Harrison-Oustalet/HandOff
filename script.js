@@ -31,7 +31,7 @@ fetch('https://unfrozen-fragment-science.ngrok-free.dev', {
   }
 });
 
-const clientSecret = "secret_FYamUp1vhGBIahs3HBz8IPna4l3pQODFXff0Gx7iqjh";
+const clientSecret = "";
 const clientId = "362d872b-594c-81f3-b531-0037bb234034";
 const redirectUri = "https://unfrozen-fragment-science.ngrok-free.dev/index.html";
 const notionUrl =
