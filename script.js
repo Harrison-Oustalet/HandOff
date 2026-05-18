@@ -25,11 +25,17 @@ const analysisStatus = document.getElementById("analysis-status");
 const analysisTasksBlock = document.getElementById("analysis-tasks-block");
 const analysisTaskList = document.getElementById("analysis-task-list");
 
-const API_BASE = "https://handoff-backend-ozmk.onrender.com";
+fetch('https://unfrozen-fragment-science.ngrok-free.dev', {
+  headers: {
+    'ngrok-skip-browser-warning': 'true'
+  }
+});
+
+const clientSecret = "secret_FYamUp1vhGBIahs3HBz8IPna4l3pQODFXff0Gx7iqjh";
 const clientId = "362d872b-594c-81f3-b531-0037bb234034";
-const redirectUri = "https://harrison-oustalet.github.io/frontend-analyzer/";
+const redirectUri = "https://unfrozen-fragment-science.ngrok-free.dev/index.html";
 const notionUrl =
-`https://api.notion.com/v1/oauth/authorize?client_id=${clientId}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUri)}`;
+`https://api.notion.com/v1/oauth/authorize?client_id=${clientId}&response_type=code&owner=user&redirect_uri=${redirectUri}`;
 
 let numOfTasks = 0;
 
@@ -41,24 +47,28 @@ const code = params.get("code");
 
 if (code) {
   console.log(code);
-  window.history.replaceState({}, document.title, window.location.pathname);
+  window.history.replaceState({}, document.title, "/index.html");
   const notionButton = document.getElementById("analysis-notion-button");
-  if (notionButton) {
-    notionButton.remove();
-  } ;
+  notionButton.remove();
   document.querySelector(".notion-status").hidden = false;
-  fetch(`${API_BASE}/notion/exchange`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ code })
-  })
-  .then(res => res.json())
-  .then(data => {
-  console.log(data);
-  document.querySelector(".notion-status").textContent = `Synced with Notion as ${data.owner.name}`;
-  });
+  fetch("https://api.notion.com/v1/oauth/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Basic " + btoa(
+        clientId + ":" + clientSecret
+      )
+    },
+    body: JSON.stringify({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: redirectUri
+    })
+  }).then(res => res.json())
+    .then(data => {
+      console.log(data);
+      document.querySelector(".notion-status__value").textContent = "Connected to Notion";
+    });
 } else {
   document.querySelector(".analysis-panel__notion-button").addEventListener("click", handleNotionExport);
 }
@@ -172,7 +182,7 @@ document.querySelector(".upload-modal__browse").addEventListener("click", (e) =>
 });
 
 const url =
-"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=AIzaSyBfMopBCgJbVjSsYVm9b6lifSRpFC52_wo";
+"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=AIzaSyDqsMo9LUsQvntV1z2IzYxJsuHo1q5SqNA";
 
 async function getGeminiResponse(text, fileName) {
   CURRENT_TASKS = [];
@@ -212,19 +222,17 @@ async function getGeminiResponse(text, fileName) {
   ]
   };
   try {
-    const response = await fetch("https://handoff-backend-ozmk.onrender.com/gemini", {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ text })
-    });    
+      body: JSON.stringify(payload)
+    });
 
     numOfTasks = 0;
     const data = await response.json();
-    if (!data.candidates || !data.candidates[0]) {
-      throw new Error("No response from Gemini");
-    }
+    const geminiText = data.candidates[0].content.parts[0].text;
     const parsed = JSON.parse(geminiText);
     CURRENT_TASKS = parsed.tasks.map(task => {
     return `${task.assignee ? task.assignee + ": " : ""}${task.task}${task.due_date && task.due_date !== "Not specified" ? " due " + task.due_date : ""}`;
